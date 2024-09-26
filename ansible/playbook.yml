@@ -1,9 +1,12 @@
 ---
 - name: Install Git, Docker, and Jenkins
   hosts: all
+  remote_user: ubuntu
   become: yes
-
+  vars:
+    ansible_ssh_private_key_file: /home/ammarmorad/devops/storybooks/storybooks_deployment/storybooks_deployment.pem
   tasks:
+    
     - name: Update apt cache
       apt:
         update_cache: yes
@@ -18,6 +21,12 @@
         name: docker.io
         state: present
 
+    - name: Add user to Docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
     - name: Add Jenkins repository key
       apt_key:
         url: https://pkg.jenkins.io/debian/jenkins.io.key
@@ -27,6 +36,10 @@
       apt_repository:
         repo: deb http://pkg.jenkins.io/debian-stable binary/
         state: present
+
+    - name: Update apt cache after adding Jenkins repository
+      apt:
+        update_cache: yes
 
     - name: Install Jenkins
       apt:

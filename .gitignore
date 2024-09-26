@@ -1,2 +1,8 @@
 node_modules
 config/config.env
+.*
+*.pem
+terraform/provider.tf 
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/.terraform
