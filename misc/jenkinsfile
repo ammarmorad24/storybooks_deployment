@@ -1,7 +1,6 @@
 pipeline {
-    agent {
-        label 'ec2-agent'
-    }
+    agent localhost
+    
     
     environment {
         DOCKER_IMAGE = 'storybooks'
@@ -46,6 +45,28 @@ pipeline {
             }
         }
 
+        stage('Push') {
+            steps {
+                script {
+                    // Push the Docker image to Docker Hub
+                    sh 'docker tag ${DOCKER_IMAGE} ammarmorad24/${DOCKER_IMAGE}'
+                    sh 'docker push ammarmorad24/${DOCKER_IMAGE}'
+                }
+            }
+        }
+
+        stage('Deploy') {
+            // run the ansible playbook 
+            agent localhost
+            steps {
+                // go to the ansible directory 
+                dir('ansible') {
+                    // run the ansible playbook
+                    sh 'ansible-playbook -i inventory playbook.yml'
+                }
+
+            }
+
 
        
     }
@@ -84,4 +105,5 @@ pipeline {
             )
         }
     }
+}
 }
