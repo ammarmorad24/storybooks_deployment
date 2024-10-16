@@ -1,5 +1,6 @@
 pipeline {
-    agent localhost
+    // let the agent be that device
+    agent any
     
     
     environment {
@@ -57,7 +58,7 @@ pipeline {
 
         stage('Deploy') {
             // run the ansible playbook 
-            agent localhost
+           
             steps {
                 // go to the ansible directory 
                 dir('ansible') {
