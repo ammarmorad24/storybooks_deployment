@@ -1,2 +1,2 @@
-35.158.183.124 
-3.74.154.18 
+ec2-18-194-27-89.eu-central-1.compute.amazonaws.com ansible_user=ubuntu ansible_ssh_private_key_file=./storybooks_deployment.pem
+ec2-18-195-47-19.eu-central-1.compute.amazonaws.com ansible_user=ubuntu ansible_ssh_private_key_file=./storybooks_deployment.pem

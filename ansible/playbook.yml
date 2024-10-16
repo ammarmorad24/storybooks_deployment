@@ -9,6 +9,16 @@
       apt:
         update_cache: yes
         cache_valid_time: 3600
+    
+    # Step 1: Ensure Python is installed
+    - name: Ensure Python is installed
+      raw: sudo apt-get update && sudo apt-get install -y python3 python3-pip
+
+    # Step 2: Install six module
+    - name: Install six module
+      pip:
+        name: six
+        executable: pip3
 
     # Step 2: Install Git
     - name: Install Git

@@ -5,7 +5,7 @@ pipeline {
         DOCKER_IMAGE = 'storybooks'
         GIT_REPO = 'https://github.com/ammarmorad24/storybooks_deployment.git'
         SCANNER_HOME=tool 'SonarQubeScanner' // Name of your SonarQube server configured in Jenkins
-        RECIPIENT = "my1558977@gmail.com"
+        RECIPIENT = "mowike6277@angewy.com"
 
     }
 

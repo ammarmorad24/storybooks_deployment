@@ -1,48 +1,32 @@
-# Create VPC
-resource "aws_vpc" "main_vpc" {
-  cidr_block = "10.0.0.0/16"
-}
 
-# Create Subnets (two public subnets)
-resource "aws_subnet" "subnet" {
-  count           = 2
-  vpc_id          = aws_vpc.main_vpc.id
-  cidr_block      = cidrsubnet(aws_vpc.main_vpc.cidr_block, 8, count.index)
-  availability_zone = element(["eu-central-1a", "eu-central-1b"], count.index)
-  map_public_ip_on_launch = true   # Ensure public IP is assigned
-}
 
-# Create Internet Gateway
-resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.main_vpc.id
-}
-
-# Create Route Table and Route
-resource "aws_route_table" "public_rt" {
-  vpc_id = aws_vpc.main_vpc.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw.id
-  }
-}
-
-# Associate Route Table with Subnets
-resource "aws_route_table_association" "public_rt_assoc" {
-  count          = 2
-  subnet_id      = element(aws_subnet.subnet[*].id, count.index)
-  route_table_id = aws_route_table.public_rt.id
-}
-
-# Security Group allowing SSH and all outbound traffic
-resource "aws_security_group" "instance_sg" {
-  vpc_id = aws_vpc.main_vpc.id
+# Security Group definition allowing inbound traffic on port 8080, 3000, and 22
+resource "aws_security_group" "allow_ssh_http" {
+  name        = "allow_ssh_http"
+  description = "Security group to allow SSH, HTTP (8080), and custom port (3000)"
 
   ingress {
+    description = "Allow SSH"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]   # Allow SSH from any IP (open for demo)
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Allow HTTP on port 8080"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Allow custom port 3000"
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -53,18 +37,36 @@ resource "aws_security_group" "instance_sg" {
   }
 }
 
-# EC2 Instances (two instances with public IPs)
-resource "aws_instance" "web" {
-  count         = 2
-  ami           = "ami-0e04bcbe83a83792e" # Ubuntu AMI
-  instance_type = "t2.micro"
-  key_name      = "storybooks_deployment"
-  subnet_id     = element(aws_subnet.subnet[*].id, count.index)
-  vpc_security_group_ids = [aws_security_group.instance_sg.id]
-  
-  associate_public_ip_address = true   # Assign a public IP
+# Create two EC2 instances
+resource "aws_instance" "ec2_instance" {
+  count = 2
+
+  ami           = "ami-0e04bcbe83a83792e" # Replace with the latest AMI for your region
+  instance_type = "t2.micro"  # Adjust instance type based on your needs
+
+  key_name = "storybooks_deployment"  # Replace with your key pair name
+
+  # Associate the instance with the security group
+  vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
+
+  # User data (optional)
+  user_data = <<-EOF
+              #!/bin/bash
+              sudo apt-get update
+              EOF
 
   tags = {
-    Name = "web-instance-${count.index + 1}"
+    Name = "Terraform-EC2-${count.index + 1}"
   }
+}
+
+# Outputs for the EC2 instances
+output "instance_public_ips" {
+  description = "Public IPs of the EC2 instances"
+  value       = [aws_instance.ec2_instance[*].public_ip]
+}
+
+output "instance_public_dns" {
+  description = "Public DNS of the EC2 instances"
+  value       = [aws_instance.ec2_instance[*].public_dns]
 }
