@@ -12,4 +12,4 @@ USER node
 
 EXPOSE 3000
 
-CMD ["docker" , "compose", "up"]
+CMD ["npm", "start"]
