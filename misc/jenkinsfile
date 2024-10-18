@@ -1,102 +1,63 @@
 pipeline {
-    // let the agent be that device
     agent any
-    
-    
-    environment {
-        DOCKER_IMAGE = 'storybooks'
-        GIT_REPO = 'https://github.com/ammarmorad24/storybooks_deployment.git'
-        SCANNER_HOME=tool 'SonarQubeScanner' // Name of your SonarQube server configured in Jenkins
-        RECIPIENT = "3mmarmorad2.am@gmail.com"
 
+    environment {
+        DOCKER_IMAGE = 'ammarmorad24/storybooks'
+        GIT_REPO = 'https://github.com/ammarmorad24/storybooks_deployment.git'
+        SCANNER_HOME = tool 'SonarQubeScanner' // Name of your SonarQube server configured in Jenkins
+        RECIPIENT = "3mmarmorad2.am@gmail.com"
     }
 
     stages {
         stage('Checkout') {
+            
             steps {
-                // Cloning the repository from GitHub/GitLab
-                git branch: 'master', url: "${env.GIT_REPO}"
+                git url: "${GIT_REPO}"
             }
         }
 
         stage('Build') {
+            
             steps {
-                script {
-                    // Build the Docker image
-                    sh 'docker build -t ${DOCKER_IMAGE} .'
+                sh 'docker build -t ${DOCKER_IMAGE} .'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh "${SCANNER_HOME}/bin/sonar-scanner"
                 }
             }
         }
 
-        stage("Sonarqube Analysis "){
-            steps{
-                withSonarQubeEnv('SonarQubeScanner') {
-                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=story \
-                    -Dsonar.java.binaries=. \
-                    -Dsonar.projectKey=story 
-                    
-                    '''
-                    
-                }
-            }
-        }
-        stage("TRIVY"){
-            steps{
-                sh " trivy image ${DOCKER_IMAGE}"
+        stage('Trivy Scan') {
+            
+            steps {
+                sh "trivy image ${DOCKER_IMAGE}"
             }
         }
 
         stage('Push') {
+            
             steps {
-                script {
-                    // Push the Docker image to Docker Hub
-                    sh 'docker tag ${DOCKER_IMAGE} ammarmorad24/${DOCKER_IMAGE}'
-                    sh 'docker push ammarmorad24/${DOCKER_IMAGE}'
-                }
+                sh docker push ${DOCKER_IMAGE}
             }
+            
         }
 
         stage('Deploy') {
-            // run the ansible playbook 
-           
+            
             steps {
-                // go to the ansible directory 
-                dir('ansible') {
-                    // run the ansible playbook
-                    sh 'ansible-playbook -i inventory playbook.yml'
-                }
-
+                sh 'docker run -d -p 3000:3000 ${DOCKER_IMAGE}'
             }
-
-
-       
+        }
     }
 
     post {
-        success {
-            emailext (
-                subject: "Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' Succeeded",
-                body: """
-                <p>Good news!</p>
-                <p>The job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' succeeded.</p>
-                <p>Check the details <a href="${env.BUILD_URL}">here</a>.</p>
-                """,
-                recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']],
-                to: "${RECIPIENT}"
-            )
-        }
-        failure {
-            emailext (
-                subject: "Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' Failed",
-                body: """
-                <p>Unfortunately, the job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' failed.</p>
-                <p>Please check the logs <a href="${env.BUILD_URL}">here</a>.</p>
-                """,
-                to: "${RECIPIENT}"
-            )
-        }
         always {
-            emailext (
+            emailext(
                 subject: "Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' Completed",
                 body: """
                 <p>The job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' has completed.</p>
@@ -106,5 +67,4 @@ pipeline {
             )
         }
     }
-}
 }

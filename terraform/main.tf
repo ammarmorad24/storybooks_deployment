@@ -21,10 +21,36 @@ resource "aws_security_group" "allow_ssh_http" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  // allow https port
+  ingress {
+    description = "Allow HTTPS on port 443"
+    from_port   = 50000
+    to_port     = 50000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   ingress {
     description = "Allow custom port 3000"
     from_port   = 3000
     to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  // allow mongodb port and sonarqube port
+  ingress {
+    description = "Allow MongoDB port 27017"
+    from_port   = 27017
+    to_port     = 27017
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Allow SonarQube port 9000"
+    from_port   = 9000
+    to_port     = 9000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -36,15 +62,12 @@ resource "aws_security_group" "allow_ssh_http" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
-
-# Create two EC2 instances
+# Create one EC2 instance
 resource "aws_instance" "ec2_instance" {
-  count = 2
+  ami           = "ami-08ec94f928cf25a9d" # Replace with the latest AMI for your region
+  instance_type = "t2.micro"              # Adjust instance type based on your needs
 
-  ami           = "ami-0e04bcbe83a83792e" # Replace with the latest AMI for your region
-  instance_type = "t2.micro"  # Adjust instance type based on your needs
-
-  key_name = "storybooks_deployment"  # Replace with your key pair name
+  key_name = "storybooks_deployment" # Replace with your key pair name
 
   # Associate the instance with the security group
   vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
@@ -56,17 +79,17 @@ resource "aws_instance" "ec2_instance" {
               EOF
 
   tags = {
-    Name = "Terraform-EC2-${count.index + 1}"
+    Name = "Terraform-EC2-1"
   }
 }
 
-# Outputs for the EC2 instances
-output "instance_public_ips" {
-  description = "Public IPs of the EC2 instances"
-  value       = [aws_instance.ec2_instance[*].public_ip]
+# Outputs for the EC2 instance
+output "instance_public_ip" {
+  description = "Public IP of the EC2 instance"
+  value       = aws_instance.ec2_instance.public_ip
 }
 
 output "instance_public_dns" {
-  description = "Public DNS of the EC2 instances"
-  value       = [aws_instance.ec2_instance[*].public_dns]
+  description = "Public DNS of the EC2 instance"
+  value       = aws_instance.ec2_instance.public_dns
 }

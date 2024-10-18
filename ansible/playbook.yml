@@ -1,80 +1,67 @@
 ---
-- name: Install Git, Docker, and Jenkins
+- name: Install Git, Docker, and Jenkins on Amazon Linux 2023
   hosts: all
   become: yes
   tasks:
 
-    # Step 1: Update the system
-    - name: Update apt repository and cache
-      apt:
+    # Step 1: Update dnf repository and cache
+    - name: Update dnf repository and cache
+      dnf:
         update_cache: yes
-        cache_valid_time: 3600
-    
-    # Step 1: Ensure Python is installed
-    - name: Ensure Python is installed
-      raw: sudo apt-get update && sudo apt-get install -y python3 python3-pip
-
-    
 
     # Step 2: Install Git
     - name: Install Git
-      apt:
+      dnf:
         name: git
         state: present
 
-    # Step 3: Install Docker prerequisites
-    - name: Install Docker prerequisites
-      apt:
-        name:
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - software-properties-common
-        state: present
-
-    # Step 4: Add Docker GPG key
-    - name: Add Docker GPG apt Key
-      apt_key:
-        url: https://download.docker.com/linux/ubuntu/gpg
-        state: present
-
-    # Step 5: Add Docker repository
-    - name: Add Docker apt repository
-      apt_repository:
-        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-        state: present
-
-    # Step 6: Install Docker
+    # Step 3: Install Docker
     - name: Install Docker
-      apt:
-        name: docker-ce
+      dnf:
+        name: docker
         state: present
         update_cache: yes
 
-    # Step 7: Ensure Docker is started and enabled
+    # Step 4: Start and enable Docker service
     - name: Start and enable Docker service
       systemd:
         name: docker
         enabled: yes
         state: started
 
-    # Step 8: Add current user to Docker group (optional step)
+    # Step 5: Add current user to Docker group (optional)
     - name: Add user to Docker group
       user:
         name: "{{ ansible_user }}"
         groups: docker
         append: yes
 
-    # Step 9: Install Java for Jenkins (Jenkins requires Java)
-    - name: Install OpenJDK (Java)
-      apt:
-        name: openjdk-17-jdk
+    # Step 6: Install Java (Amazon Corretto)
+    - name: Install Amazon Corretto 11 (Java)
+      dnf:
+        name: java-11-amazon-corretto
         state: present
 
-    # step 10: pull dockerhub image
-    - name: Pull Dockerhub image
-      docker_image:
-        name: ammarmorad24/storybooks
-        source: pull
+    # Step 7: Add Jenkins repository key
+    - name: Add Jenkins repo key
+      rpm_key:
+        key: https://pkg.jenkins.io/redhat-stable/jenkins.io.key
 
-    
+    # Step 8: Add Jenkins repository via shell
+    - name: Add Jenkins repository
+      shell: |
+        wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins.io/redhat-stable/jenkins.repo
+        rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+
+    # Step 9: Install Jenkins
+    - name: Install Jenkins
+      dnf:
+        name: jenkins
+        state: present
+
+    # Step 10: Start and enable Jenkins service
+    - name: Start and enable Jenkins service
+      systemd:
+        name: jenkins
+        enabled: yes
+        state: started
