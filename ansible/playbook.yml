@@ -1,61 +1,84 @@
 ---
-- name: Install Git, Docker, and Jenkins on Amazon Linux 2023
+- name: Install Git, Docker, and Jenkins on Ubuntu
   hosts: all
   become: yes
   tasks:
 
-    # Step 1: Update dnf repository and cache
-    - name: Update dnf repository and cache
-      dnf:
+    # Step 1: Update apt repository and cache
+    - name: Update apt repository and cache
+      apt:
         update_cache: yes
 
     # Step 2: Install Git
     - name: Install Git
-      dnf:
+      apt:
         name: git
         state: present
 
-    # Step 3: Install Docker
+       # Step 3: Install Docker prerequisites
+    - name: Install Docker prerequisites
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+
+    # Step 4: Add Docker GPG key
+    - name: Add Docker GPG apt key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    # Step 5: Add Docker repository
+    - name: Add Docker apt repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    # Step 6: Install Docker
     - name: Install Docker
-      dnf:
-        name: docker
+      apt:
+        name: docker-ce
         state: present
         update_cache: yes
 
-    # Step 4: Start and enable Docker service
+    # Step 7: Ensure Docker is started and enabled
     - name: Start and enable Docker service
       systemd:
         name: docker
         enabled: yes
         state: started
 
-    # Step 5: Add current user to Docker group (optional)
+    # Step 8: Add current user to Docker group (optional step)
     - name: Add user to Docker group
       user:
         name: "{{ ansible_user }}"
         groups: docker
         append: yes
 
-    # Step 6: Install Java (Amazon Corretto)
-    - name: Install Amazon Corretto 11 (Java)
-      dnf:
-        name: java-11-amazon-corretto
+    # Step 6: Install Java (OpenJDK)
+    - name: Install OpenJDK 11
+      apt:
+        name: openjdk-11-jdk
         state: present
 
     # Step 7: Add Jenkins repository key
     - name: Add Jenkins repo key
-      rpm_key:
-        key: https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+      apt_key:
+        url: https://pkg.jenkins.io/debian/jenkins.io.key
+        state: present
 
-    # Step 8: Add Jenkins repository via shell
+    # Step 8: Add Jenkins repository
     - name: Add Jenkins repository
-      shell: |
-        wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins.io/redhat-stable/jenkins.repo
-        rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+      apt_repository:
+        repo: 'deb http://pkg.jenkins.io/debian-stable binary/'
+        state: present
 
     # Step 9: Install Jenkins
     - name: Install Jenkins
-      dnf:
+      apt:
         name: jenkins
         state: present
 

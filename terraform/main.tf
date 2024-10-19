@@ -63,9 +63,9 @@ resource "aws_security_group" "allow_ssh_http" {
   }
 }
 # Create one EC2 instance
-resource "aws_instance" "ec2_instance" {
-  ami           = "ami-08ec94f928cf25a9d" # Replace with the latest AMI for your region
-  instance_type = "t2.micro"              # Adjust instance type based on your needs
+resource "aws_instance" "jenkins_instance" {
+  ami           = "ami-08ec94f928cf25a9d"
+  instance_type = "t2.medium"
 
   key_name = "storybooks_deployment" # Replace with your key pair name
 
@@ -79,7 +79,67 @@ resource "aws_instance" "ec2_instance" {
               EOF
 
   tags = {
-    Name = "Terraform-EC2-1"
+    Name = "jenkins"
+  }
+}
+
+resource "aws_instance" "docker_instance" {
+  ami           = "ami-08ec94f928cf25a9d"
+  instance_type = "t2.medium"
+
+  key_name = "storybooks_deployment" # Replace with your key pair name
+
+  # Associate the instance with the security group
+  vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
+
+  # User data (optional)
+  user_data = <<-EOF
+              #!/bin/bash
+              sudo apt-get update
+              EOF
+
+  tags = {
+    Name = "docker"
+  }
+}
+
+resource "aws_instance" "storybooks_instance" {
+  ami           = "ami-08ec94f928cf25a9d"
+  instance_type = "t2.medium"
+
+  key_name = "storybooks_deployment" # Replace with your key pair name
+
+  # Associate the instance with the security group
+  vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
+
+  # User data (optional)
+  user_data = <<-EOF
+              #!/bin/bash
+              sudo apt-get update
+              EOF
+
+  tags = {
+    Name = "storybooks"
+  }
+}
+
+resource "aws_instance" "sonarqube_instance" {
+  ami           = "ami-08ec94f928cf25a9d"
+  instance_type = "t2.medium"
+
+  key_name = "storybooks_deployment" # Replace with your key pair name
+
+  # Associate the instance with the security group
+  vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
+
+  # User data (optional)
+  user_data = <<-EOF
+              #!/bin/bash
+              sudo apt-get update
+              EOF
+
+  tags = {
+    Name = "sonarqube"
   }
 }
 
